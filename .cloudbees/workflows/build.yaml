@@ -28,7 +28,8 @@ jobs:
         uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
         shell: bash
         run: |
-          dotnet test --solution eShop.Web.slnf --no-build --configuration Release --filter "FullyQualifiedName!~FunctionalTests"
+          dotnet test tests/Basket.UnitTests/Basket.UnitTests.csproj --no-build --configuration Release
+          dotnet test tests/Ordering.UnitTests/Ordering.UnitTests.csproj --no-build --configuration Release
 
   functional-tests:
     needs: build-and-unit-tests
@@ -55,4 +56,5 @@ jobs:
           dotnet build eShop.Web.slnf --no-restore --configuration Release
 
           # Run functional tests
-          dotnet test --solution eShop.Web.slnf --no-build --configuration Release --filter "FullyQualifiedName~FunctionalTests"
+          dotnet test tests/Catalog.FunctionalTests/Catalog.FunctionalTests.csproj --no-build --configuration Release
+          dotnet test tests/Ordering.FunctionalTests/Ordering.FunctionalTests.csproj --no-build --configuration Release
