@@ -1,0 +1,37 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+
+name: eShop Build and Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+
+      - name: Setup .NET SDK
+        uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
+        shell: bash
+        run: |
+          dotnet --version
+
+      - name: Restore dependencies
+        uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
+        shell: bash
+        run: |
+          dotnet restore eShop.Web.slnf
+
+      - name: Build
+        uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
+        shell: bash
+        run: |
+          dotnet build eShop.Web.slnf --no-restore --configuration Release
+
+      - name: Run tests
+        uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
+        shell: bash
+        run: |
+          dotnet test --solution eShop.Web.slnf --no-build --configuration Release
