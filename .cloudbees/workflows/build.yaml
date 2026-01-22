@@ -7,16 +7,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-unit-tests:
     steps:
       - name: Checkout
         uses: cloudbees-io/checkout@v1
-
-      - name: Setup .NET SDK
-        uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
-        shell: bash
-        run: |
-          dotnet --version
 
       - name: Restore dependencies
         uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
@@ -30,8 +24,35 @@ jobs:
         run: |
           dotnet build eShop.Web.slnf --no-restore --configuration Release
 
-      - name: Run tests
+      - name: Run unit tests
         uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
         shell: bash
         run: |
-          dotnet test --solution eShop.Web.slnf --no-build --configuration Release
+          dotnet test --solution eShop.Web.slnf --no-build --configuration Release --filter "FullyQualifiedName!~FunctionalTests"
+
+  functional-tests:
+    needs: build-and-unit-tests
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+
+      - name: Install Docker and run functional tests
+        uses: docker://mcr.microsoft.com/dotnet/sdk:10.0
+        shell: bash
+        run: |
+          # Install Docker
+          apt-get update
+          apt-get install -y ca-certificates curl gnupg
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+          chmod a+r /etc/apt/keyrings/docker.asc
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+          apt-get update
+          apt-get install -y docker-ce-cli docker-buildx-plugin
+
+          # Restore and build (needed since this is a new job)
+          dotnet restore eShop.Web.slnf
+          dotnet build eShop.Web.slnf --no-restore --configuration Release
+
+          # Run functional tests
+          dotnet test --solution eShop.Web.slnf --no-build --configuration Release --filter "FullyQualifiedName~FunctionalTests"
